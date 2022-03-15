@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser(
                     """,
         formatter_class= argparse.ArgumentDefaultsHelpFormatter,
         fromfile_prefix_chars='+',
-        epilog='Further arguments caan be given in a file using +FILENAME')
+        epilog='Further arguments can be given in a file using +FILENAME')
 
 parser.add_argument( 'input'                                  , help='an xyz geometry file for an input geometry')
 parser.add_argument( '-R', '--rotation'  , nargs=3            , help='degrees of rotation around the normal axes (e.g. 60 0 180)', default=None)
@@ -39,25 +39,33 @@ parser.add_argument(       '--connect'                        , help="connectivi
 parser.add_argument( '-A', '--atomlabel' , action='store_true', help='display atom symbol in label')
 parser.add_argument(       '--numat'     , action='store_true', help='display atom number in label')
 parser.add_argument( '-B', '--bondlabel' , action='store_true', help='display bond label')
+parser.add_argument(       '--labscale'  , default='0.4'      , help='display bond label')
 parser.add_argument(       '--digits'    , default=3          , help='number of digits in bondlength and anglesize')
 parser.add_argument(       '--opaque'    , default=None       , help='draw additional darker layers on atoms based on depth')
+parser.add_argument(       '--debug'     , action='store_true', help='enter program in debug mode')
 
 args = parser.parse_args()
 
 
 def read_geo( fpath):
-    line_regex = '\s*\w+\d*(\s+\-?\d+\.\d+(e|E\-?\d+)?){3}'
-    at_regex = '\w+\d*'
-    cor_regex = r'(-?\d+\.\d+){1}(e|E-\d+)?'
-    with open( fpath, 'r') as f:
-        atoms, coor = [], []
-        for l in f:
-            if re.match( line_regex, l):
-                atom = re.search( at_regex, l).group()
-                x, y, z = re.findall( cor_regex, l)
-                x, y, z = clean(x), clean(y), clean(z)
-                atoms.append( atom)
-                coor.append( [x, y, z] )
+    try:
+        from PES import vmd
+        atoms, xyz = vmd.read_vmd( fpath)
+        coor = xyz.tolist()
+    except Exception as e:
+        #line_regex = '\s*\w+\d*(\s+\-?\d+\.\d+(e|E\-?\d+)?){3}'
+        line_regex = '\s*[a-zA-Z0-9]+(\s+\-?\d+\.\d+(e|E\-?\d+)?){3}'
+        at_regex = '\w+\d*'
+        cor_regex = r'(-?\d+\.\d+){1}(e|E-\d+)?'
+        with open( fpath, 'r') as f:
+            atoms, coor = [], []
+            for l in f:
+                if re.match( line_regex, l):
+                    atom = re.search( at_regex, l).group()
+                    x, y, z = re.findall( cor_regex, l)
+                    x, y, z = clean(x), clean(y), clean(z)
+                    atoms.append( atom)
+                    coor.append( [x, y, z] )
     print( 'input read from \t{0}'.format( fpath))
     coor = np.array( coor).astype( float)
     atom_index = [ a + str(i) for i, a in enumerate( atoms)]
@@ -147,6 +155,8 @@ def write2template( fpath, tpath, connect=None, ang=None, rot_note=None, colors_
     scale3 = coor[:,-1]
     mi, ma = 0.7, 1.3
     scale3 = (scale3 - scale3.min()) / (scale3.max() - scale3.min()) * (ma - mi) + mi
+    if np.any( np.isnan( scale3)):
+        scale3[:] = 1.0
 
     # write to file
     with open( tpath, 'w') as t:
@@ -187,7 +197,7 @@ def write2template( fpath, tpath, connect=None, ang=None, rot_note=None, colors_
                 except Exception as e:
                     pass
                 if args.bondlabel:
-                    t.write( '\\draw[very thick, draw=black!70!white] ({0}) -- node[sloped, anchor=center, above, scale=0.4] {{ {1} }} ({2});\n'.format(k[0], connect[k], k[1])) 
+                    t.write( '\\draw[very thick, draw=black!70!white] ({0}) -- node[sloped, anchor=center, above, scale={3}] {{ {1} }} ({2});\n'.format(k[0], connect[k], k[1], args.labscale)) 
                 else:
                     t.write( '\\draw[very thick, draw=black!70!white] ({0}) -- ({1});\n'.format(k[0], k[1])) 
         t.write('\n')
@@ -236,7 +246,7 @@ def write2template( fpath, tpath, connect=None, ang=None, rot_note=None, colors_
             c = tuple( geom.loc[a, ['x', 'y']].values)
             chem = re.match( regex_chem, a).group()
             num_chem = re.search( regex_num, a).group()
-            opaque = float( args.opaque) - ( i/len(geom.index) * float( args.opaque) )
+            opaque = float( args.opaque) - ( i/len(geom.index) * float( args.opaque) ) if args.opaque is not None else None
             if args.numat and args.atomlabel:
                 t.write( '\\node[{0}, scale={3}] ({1}) at {2} {{ {4} }};\n'.format(chem, a, c, scale3[i], '$\mathrm{{ {0} }}_{{ {1} }}$'.format( chem, num_chem) )) 
             elif args.atomlabel:
@@ -253,7 +263,7 @@ def write2template( fpath, tpath, connect=None, ang=None, rot_note=None, colors_
 
 def cue_size( beg, end, size=0.1):
     v = end - beg
-    if np.allclose( v, 0, atol=1e-05):
+    if np.allclose( v, 0, atol=1e-5):
         vh = np.array( (0, 0))
     elif np.round( v[0], 5)==0:
         vh = np.array( (1, 0))
@@ -262,7 +272,7 @@ def cue_size( beg, end, size=0.1):
     else:
         mh = - v[0] / v[1]
         vh = np.array( (1, mh))
-        vh = vh / np.sqrt(vh @ vh) * 0.5 * size
+    vh = vh / np.sqrt(vh @ vh) * 0.5 * size
     #endup   = end + vh
     #enddown = end - vh
     endup   = + vh
@@ -325,6 +335,8 @@ def calc_angles2( geom, selection=None):
 
 
 if __name__ == '__main__':
+    if args.debug:
+        breakpoint()
     atoms, coor, geom = read_geo( args.input)
     atoms_lab = [a + str(i) for i, a in enumerate( atoms)]
     degs = np.array( ['0', '0', '0']).astype( float) if not args.rotation else np.array( args.rotation).astype( float)
