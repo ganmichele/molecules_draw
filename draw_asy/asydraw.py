@@ -18,7 +18,7 @@ from argparse import RawTextHelpFormatter
 import pandas as pd
 
 # Michele's custom packages
-from PES import vmd
+import vmd
 
 
 # INITIALIZE PARENT ARGUMENT PARSER
