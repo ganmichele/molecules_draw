@@ -19,6 +19,7 @@ to run the scripts in *draw_asy* you need:
 -asymptote
 -python > 3.6
 -python external libraries:
+    -numpy
     -pandas
 
 THIS IS A WORK IN PROGRESS, DEBUGGING AND TINKERING MIGHT BE NECESSARY IF NOT EXPECTED
