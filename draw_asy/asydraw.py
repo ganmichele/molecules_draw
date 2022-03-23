@@ -99,6 +99,8 @@ with open( args.output, 'w') as f:
 
     f.write( """
 import three;
+import palette;
+import graph;
 settings.render=10;
 settings.prc=false;
 size(10cm);
@@ -132,6 +134,8 @@ triple towardcamera( triple pt, real distance=1, projection
 }
     """)
 
+    f.write( f'material cylcolor0 = material(diffusepen=gray(0.5),specularpen=gray(0.30),emissivepen=gray(0.40));\n')
+
     if args.numlab:
         f.write( """
 void drawRod(triple a, triple b, string lab) {
@@ -146,19 +150,34 @@ void drawRod(triple a, triple b, string lab) {
   // must project onto X-Y plane and compute angle //
   //draw(a -- b, L=rotate(angle1)*Label(lab, align=NoAlign, fontsize(2pt), position=MidPoint));
   //draw(a -- b, L=Label(lab, align=N, fontsize(2pt), position=Relative(0.5)));
-  draw(shift(a)*rod, surfacepen=cylcolor);
+  draw(shift(a)*rod, surfacepen=cylcolor0);
   triple mid = (a + b) / 2.0 + (0,0,1);
   //label( rotate( angle1, z=(0,0))*Label( lab, align=N, fontsize(2pt)), position=towardcamera( mid));
   label( Label( lab, align=N, fontsize(2pt)), position=towardcamera( mid));
 }
         """)
     elif args.colorlab:
-        for i, v in enumerate( np.linspace( 0.1, 0.8, args.num_bins), start=1):
-            f.write( f'material cylcolor{args.num_bins-i}= material(specularpen=gray({v}),emissivepen=gray({v}));\n')
+        # first scale
+        if args.num_bins % 2 != 0:
+            args.num_bins += 1
+        for i, v in enumerate( np.linspace( 0.2, 1.0, args.num_bins), start=0):
+            #f.write( f'material cylcolor{args.num_bins-i}= material(specularpen=gray({v}),emissivepen=gray({v}));\n')
+            # blue scale
+            #f.write( f'material cylcolor{i}= material(specularpen=rgb(1-{v},1-{v},1),emissivepen=rgb(1-{v},1-{v},1));\n')
+            # gray scale
+            f.write( f'material cylcolor{i}= material(emissivepen=rgb(1-{v}*0.7,1-{v},1-{v}));\n')
+            #f.write( f'filldraw(box((0,{i}), (2,{i+1})), red);;\n')
+        # second scale
+        #for i, v in enumerate( np.linspace( 0.0, 1.0, args.num_bins//2), start=args.num_bins//2):
+        #    #f.write( f'material cylcolor{args.num_bins-i}= material(specularpen=gray({v}),emissivepen=gray({v}));\n')
+        #    # red scale
+        #    f.write( f'material cylcolor{i}= material(emissivepen=rgb(0.3,{v},{v}));\n')
+        #    # greenish gray scale
+        #    #f.write( f'material cylcolor{i}= material(emissivepen=rgb(0.85-{v},1-{v},1-{v}));\n')
+        #    #f.write( f'filldraw(box((0,{i}), (2,{i+1})),blue);;\n')
         for n in range( args.num_bins):
             f.write( f"""
 void drawRod{n}(triple a, triple b, string lab) {{
-  //real cylRadius1 = cylRadius * {n+1} * 0.4;
   real cylRadius1 = cylRadius;
   surface rod = extrude(scale(cylRadius1)*unitcircle, axis=length(b-a)*Z);
   triple orthovector = cross(Z, b-a);
@@ -168,14 +187,15 @@ void drawRod{n}(triple a, triple b, string lab) {{
     rod = rotate(angle1, orthovector) * rod;
   }}
   draw(shift(a)*rod, surfacepen=cylcolor{n});
+  triple mid = (a + b) / 2.0 + (0,0,1);
+  label( Label( lab, align=N, fontsize(2pt)), position=towardcamera( mid));
 }}
             """)
     elif args.sizelab:
-        f.write( f'material cylcolor0 = material(diffusepen=gray(0.5),specularpen=gray(0.30),emissivepen=gray(0.40));\n')
         for n in range( args.num_bins):
             f.write( f"""
 void drawRod{n}(triple a, triple b, string lab) {{
-  real cylRadius1 = cylRadius * {n+1} * 0.4;
+  real cylRadius1 = cylRadius * {n+1} * 0.3;
   surface rod = extrude(scale(cylRadius1)*unitcircle, axis=length(b-a)*Z);
   triple orthovector = cross(Z, b-a);
   pair parrvec = ( 1.0/orthovector.x, 1.0/orthovector.y );
@@ -184,6 +204,8 @@ void drawRod{n}(triple a, triple b, string lab) {{
     rod = rotate(angle1, orthovector) * rod;
   }}
   draw(shift(a)*rod, surfacepen=cylcolor0);
+  triple mid = (a + b) / 2.0 + (0,0,1);
+  label( Label( lab, align=N, fontsize(2pt)), position=towardcamera( mid));
 }}
             """)
     else:
@@ -200,7 +222,6 @@ void drawRod(triple a, triple b, string lab) {
 }
         """)
         
-    
     f.write( """
 void dH(triple center) {
      draw(shift(center)*scale3(sphereRadius)*unitsphere, surfacepen=Hcol);
