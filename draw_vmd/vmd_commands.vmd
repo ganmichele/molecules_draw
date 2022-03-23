@@ -1,0 +1,57 @@
+# remove menu and axes
+menu main off
+axes location off
+# orthographics proj
+display proection orthographic
+# white background, no transparency
+color Display Background white
+display depthcue off
+# Black labels
+color Labels Bonds black
+
+# load molecule
+mol new paracetamol_eq.xyz
+
+# set default color and repr style
+mol color Name
+mol addrep 0
+mol modselect 1 0 all
+mol modstyle 1 0 CPK 1.0 0.3  30.0  30.0
+
+# add specific bonds
+topo addbond 0 11
+topo addbond 0 12
+topo addbond 0 13
+topo addbond 1 2
+topo addbond 1 3
+topo addbond 1 11
+topo addbond 1 12
+topo addbond 1 13
+topo addbond 1 14
+topo addbond 3 4
+topo addbond 3 14
+topo addbond 4 5
+topo addbond 4 10
+topo addbond 4 14
+topo addbond 4 15
+topo addbond 4 19
+topo addbond 5 6
+topo addbond 5 15
+topo addbond 5 16
+topo addbond 6 7
+topo addbond 6 15
+topo addbond 6 16
+topo addbond 7 8
+topo addbond 7 9
+topo addbond 7 16
+topo addbond 7 17
+topo addbond 7 18
+topo addbond 8 17
+topo addbond 9 10
+topo addbond 9 18
+topo addbond 9 19
+topo addbond 10 18
+topo addbond 10 19
+topo addbond 11 12
+topo addbond 11 13
+topo addbond 12 13
