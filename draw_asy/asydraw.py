@@ -15,6 +15,7 @@ import argparse
 from argparse import RawTextHelpFormatter
 
 # extra required packages for efficiency
+import numpy  as np
 import pandas as pd
 
 # Michele's custom packages
@@ -54,8 +55,10 @@ id1 id2 bond
 1   3   [val13]
 2   3   [val23]""")
 topo_args.add_argument( '--numlab', action='store_true', help='display label on bond')
-topo_args.add_argument( '--colorlab', action='store_true', help='display label on bond')
-topo_args.add_argument( '--sizelab', action='store_true', help='display label on bond')
+topo_args.add_argument( '--colorlab', action='store_true', help='color bond with grayscale depend on label')
+topo_args.add_argument( '--sizelab', action='store_true', help='display larger bonds for large labels')
+topo_args.add_argument( '--maxval', default=8, type=int, help='maximum bin id for colorlab and sizelab')
+topo_args.add_argument( '--num_bins', default=15, type=int, help='maximum bin id for colorlab and sizelab')
 
 render_args = parser.add_argument_group( title='rendering arguments', description=None)
 render_args.add_argument( '--render', default='auto', help='rendering value (higher for more quality). If ftype=pdf, then render should be 0, else 5 should be enough')
@@ -150,22 +153,9 @@ void drawRod(triple a, triple b, string lab) {
 }
         """)
     elif args.colorlab:
-        f.write( f'material cylcolor14= material(specularpen=gray(0.10),emissivepen=gray(0.10));\n')
-        f.write( f'material cylcolor13= material(specularpen=gray(0.15),emissivepen=gray(0.15));\n')
-        f.write( f'material cylcolor12= material(specularpen=gray(0.20),emissivepen=gray(0.20));\n')
-        f.write( f'material cylcolor11= material(specularpen=gray(0.25),emissivepen=gray(0.25));\n')
-        f.write( f'material cylcolor10= material(specularpen=gray(0.30),emissivepen=gray(0.30));\n')
-        f.write( f'material cylcolor9 = material(specularpen=gray(0.35),emissivepen=gray(0.35));\n')
-        f.write( f'material cylcolor8 = material(specularpen=gray(0.40),emissivepen=gray(0.40));\n')
-        f.write( f'material cylcolor7 = material(specularpen=gray(0.45),emissivepen=gray(0.45));\n')
-        f.write( f'material cylcolor6 = material(specularpen=gray(0.50),emissivepen=gray(0.50));\n')
-        f.write( f'material cylcolor5 = material(specularpen=gray(0.55),emissivepen=gray(0.55));\n')
-        f.write( f'material cylcolor4 = material(specularpen=gray(0.60),emissivepen=gray(0.60));\n')
-        f.write( f'material cylcolor3 = material(specularpen=gray(0.65),emissivepen=gray(0.65));\n')
-        f.write( f'material cylcolor2 = material(specularpen=gray(0.70),emissivepen=gray(0.70));\n')
-        f.write( f'material cylcolor1 = material(specularpen=gray(0.75),emissivepen=gray(0.75));\n')
-        f.write( f'material cylcolor0 = material(specularpen=gray(0.80),emissivepen=gray(0.80));\n')
-        for n in range( 15):
+        for i, v in enumerate( np.linspace( 0.1, 0.8, args.num_bins), start=1):
+            f.write( f'material cylcolor{args.num_bins-i}= material(specularpen=gray({v}),emissivepen=gray({v}));\n')
+        for n in range( args.num_bins):
             f.write( f"""
 void drawRod{n}(triple a, triple b, string lab) {{
   //real cylRadius1 = cylRadius * {n+1} * 0.4;
@@ -182,7 +172,7 @@ void drawRod{n}(triple a, triple b, string lab) {{
             """)
     elif args.sizelab:
         f.write( f'material cylcolor0 = material(diffusepen=gray(0.5),specularpen=gray(0.30),emissivepen=gray(0.40));\n')
-        for n in range( 15):
+        for n in range( args.num_bins):
             f.write( f"""
 void drawRod{n}(triple a, triple b, string lab) {{
   real cylRadius1 = cylRadius * {n+1} * 0.4;
@@ -264,12 +254,12 @@ triple x{i} = ({x[0]}, {x[1]}, {x[2]});
             a2 = xyz[int(row["id2"])]
             b = round( row["bond"]*1.e6, 1)
             # interval id
-            int_id = int( (row['bond'] - m) / (M - m) * 20 - 1.e-10)
-            if int_id > 8:
-                int_id = 8
+            bin_id = int( (row['bond'] - m) / (M - m) * args.num_bins - 1.e-10)
+            if bin_id > args.maxval:
+                bin_id = args.maxval
             #f.write( f'label( "hello", ({a1[0]},{a1[1]}));\n')
             if args.colorlab or args.sizelab:
-                f.write( f'drawRod{int_id}(({a1[0]}, {a1[1]}, {a1[2]}), ({a2[0]}, {a2[1]}, {a2[2]}), "{b}");\n')
+                f.write( f'drawRod{bin_id}(({a1[0]}, {a1[1]}, {a1[2]}), ({a2[0]}, {a2[1]}, {a2[2]}), "{b}");\n')
             else:
                 f.write( f'drawRod(({a1[0]}, {a1[1]}, {a1[2]}), ({a2[0]}, {a2[1]}, {a2[2]}), "{b}");\n')
             #f.write( f'drawRod(x{index}, x{index});\n')
