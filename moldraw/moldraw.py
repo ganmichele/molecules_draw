@@ -39,7 +39,9 @@ parser.add_argument(       '--connect'                        , help="connectivi
 parser.add_argument( '-A', '--atomlabel' , action='store_true', help='display atom symbol in label')
 parser.add_argument(       '--numat'     , action='store_true', help='display atom number in label')
 parser.add_argument( '-B', '--bondlabel' , action='store_true', help='display bond label')
-parser.add_argument(       '--labscale'  , default='0.4'      , help='display bond label')
+parser.add_argument(       '--labscale'  , default='0.4'      , help='scale bond label font size')
+parser.add_argument(       '--noscale_atoms', action='store_true', help='do not scale atom size by distance')
+parser.add_argument(       '--coorscale' , default=1.0, type=float, help='scale coordinates by factor')
 parser.add_argument(       '--digits'    , default=3          , help='number of digits in bondlength and anglesize')
 parser.add_argument(       '--opaque'    , default=None       , help='draw additional darker layers on atoms based on depth')
 parser.add_argument(       '--debug'     , action='store_true', help='enter program in debug mode')
@@ -47,7 +49,7 @@ parser.add_argument(       '--debug'     , action='store_true', help='enter prog
 args = parser.parse_args()
 
 
-def read_geo( fpath):
+def read_geo( fpath, scale=1.0):
     try:
         from PES import vmd
         atoms, xyz = vmd.read_vmd( fpath)
@@ -68,6 +70,7 @@ def read_geo( fpath):
                     coor.append( [x, y, z] )
     print( 'input read from \t{0}'.format( fpath))
     coor = np.array( coor).astype( float)
+    coor *= scale
     atom_index = [ a + str(i) for i, a in enumerate( atoms)]
     geom = pd.DataFrame( coor, columns=['x', 'y', 'z'], index=atom_index)
     return atoms, coor, geom
@@ -141,9 +144,9 @@ def write_out( fpath, coor):
     print( 'output written to \t{0}'.format( fpath))
 
 
-def write2template( fpath, tpath, connect=None, ang=None, rot_note=None, colors_dic=None, bond_depth=False, asize=0.4):
+def write2template( fpath, tpath, connect=None, ang=None, rot_note=None, colors_dic=None, bond_depth=False, asize=0.4, geoscale=1.0):
     # get geometries and atoms
-    atoms, coor, geom = read_geo( fpath)
+    atoms, coor, geom = read_geo( fpath, scale=geoscale)
 
     # define atoms characteristics. Add as necessary
     #colors_dic = {'H': 'white', 'C': 'gray', 'D':'pink', 'N':'blue', 'O':'red', 'S': 'yellow'}
@@ -156,6 +159,8 @@ def write2template( fpath, tpath, connect=None, ang=None, rot_note=None, colors_
     mi, ma = 0.7, 1.3
     scale3 = (scale3 - scale3.min()) / (scale3.max() - scale3.min()) * (ma - mi) + mi
     if np.any( np.isnan( scale3)):
+        scale3[:] = 1.0
+    if args.noscale_atoms:
         scale3[:] = 1.0
 
     # write to file
@@ -248,7 +253,7 @@ def write2template( fpath, tpath, connect=None, ang=None, rot_note=None, colors_
             num_chem = re.search( regex_num, a).group()
             opaque = float( args.opaque) - ( i/len(geom.index) * float( args.opaque) ) if args.opaque is not None else None
             if args.numat and args.atomlabel:
-                t.write( '\\node[{0}, scale={3}] ({1}) at {2} {{ {4} }};\n'.format(chem, a, c, scale3[i], '$\mathrm{{ {0} }}_{{ {1} }}$'.format( chem, num_chem) )) 
+                t.write( '\\node[{0}, scale={3}] ({1}) at {2} {{ {4} }};\n'.format(chem, a, c, scale3[i], '$\mathrm{{ {0} }}{{ {1} }}$'.format( chem, num_chem) )) 
             elif args.atomlabel:
                 t.write( '\\node[{0}, scale={3}] ({1}) at {2} {{ {4} }};\n'.format(chem, a, c, scale3[i], '$\mathrm{{ {0} }}$'.format( chem) )) 
             else:
@@ -371,7 +376,7 @@ if __name__ == '__main__':
     print( '\nUSING CONNECTIVITY', adj_mat, '\n')
     if args.tikz is not None:
         print( 'writing a tikz picture in {0}'.format( args.tikz))
-        write2template( args.output, args.tikz, connect=adj_mat, ang=angles, rot_note=[degs, args.order], bond_depth=args.depth, asize=args.asize)
+        write2template( args.output, args.tikz, connect=adj_mat, ang=angles, rot_note=[degs, args.order], bond_depth=args.depth, asize=args.asize, geoscale=args.coorscale)
     if args.plot:
         size = new_coor[:,2]
         size[0] *= 5
