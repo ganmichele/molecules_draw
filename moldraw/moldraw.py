@@ -253,7 +253,7 @@ def write2template( fpath, tpath, connect=None, ang=None, rot_note=None, colors_
             num_chem = re.search( regex_num, a).group()
             opaque = float( args.opaque) - ( i/len(geom.index) * float( args.opaque) ) if args.opaque is not None else None
             if args.numat and args.atomlabel:
-                t.write( '\\node[{0}, scale={3}] ({1}) at {2} {{ {4} }};\n'.format(chem, a, c, scale3[i], '$\mathrm{{ {0} }}{{ {1} }}$'.format( chem, num_chem) )) 
+                t.write( '\\node[{0}, scale={3}] ({1}) at {2} {{ {4} }};\n'.format(chem, a, c, scale3[i], '$\mathrm{{ {0} }}{{ {1} }}$'.format( chem, int(num_chem)+1) )) 
             elif args.atomlabel:
                 t.write( '\\node[{0}, scale={3}] ({1}) at {2} {{ {4} }};\n'.format(chem, a, c, scale3[i], '$\mathrm{{ {0} }}$'.format( chem) )) 
             else:
