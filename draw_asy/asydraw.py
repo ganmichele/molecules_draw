@@ -44,7 +44,7 @@ global_args.add_argument( '-O', '--output', default='picture.tex', help='name of
 style_args = parser.add_argument_group( title='style arguments', description=None)
 style_args.add_argument( '--color_scheme', default=None, help='filename for custom color scheme')
 style_args.add_argument( '--sph_s', default='0.30', help='atom sphere scale')
-style_args.add_argument( '--cyl_s', default='0.04', help='bond cylinder radius scale')
+style_args.add_argument( '--cyl_s', default='0.08', help='bond cylinder radius scale')
 style_args.add_argument( '--proj_type', default='orthographic', help='type of projection')
 style_args.add_argument( '--proj', nargs=3, default=[0,0,0], help='projection')
 
@@ -59,6 +59,7 @@ topo_args.add_argument( '--colorlab', action='store_true', help='color bond with
 topo_args.add_argument( '--sizelab', action='store_true', help='display larger bonds for large labels')
 topo_args.add_argument( '--maxval', default=8, type=int, help='maximum bin id for colorlab and sizelab')
 topo_args.add_argument( '--num_bins', default=15, type=int, help='maximum bin id for colorlab and sizelab')
+topo_args.add_argument( '--scalefact', default=1.e6, type=float, help='scale factor for bonds labels')
 
 render_args = parser.add_argument_group( title='rendering arguments', description=None)
 render_args.add_argument( '--render', default='auto', help='rendering value (higher for more quality). If ftype=pdf, then render should be 0, else 5 should be enough')
@@ -273,7 +274,8 @@ triple x{i} = ({x[0]}, {x[1]}, {x[2]});
         for index, row in df.iterrows():
             a1 = xyz[int(row["id1"])]
             a2 = xyz[int(row["id2"])]
-            b = round( row["bond"]*1.e6, 1)
+            #b = round( row["bond"]*1.e6, 1)
+            b = round( row["bond"]*args.scalefact, 1)
             # interval id
             bin_id = int( (row['bond'] - m) / (M - m) * args.num_bins - 1.e-10)
             if bin_id > args.maxval:
