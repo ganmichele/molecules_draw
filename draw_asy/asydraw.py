@@ -78,7 +78,7 @@ if args.topo is not None:
     if df.shape[1] == 2:
         df['bond'] = args.bond_s
     # ensure correct column names
-    df.set_axis( ['id1' ,'id2', 'bond'], axis='columns', inplace=True)
+    df = df.set_axis( ['id1' ,'id2', 'bond'], axis='columns')
     df.astype( {'id1': 'str', 'id2':'str', 'bond':'float64'})
     #if df['bond'].max() < 1.0:
     #    df['bond'] = ( df['bond'] - df['bond'].min() ) / ( df['bond'].max() - df['bond'].min() ) + 0.05
