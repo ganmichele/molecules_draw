@@ -64,8 +64,8 @@ topo_args.add_argument( '--labelsize', default=2, type=int, help='label font siz
 topo_args.add_argument( '--whichatomlabel', nargs='+', default=["all",], type=int, help='indexes of atoms whose connections are labeled (if labels are prescribed)')
 
 render_args = parser.add_argument_group( title='rendering arguments', description=None)
-render_args.add_argument( '--render', default='auto', help='rendering value (higher for more quality). If ftype=pdf, then render should be 0, else 5 should be enough')
-render_args.add_argument( '--ftype' , default='png', choices=['png',], help='format of embedded figure')
+render_args.add_argument( '--render', default='auto', help='rendering value (higher for more quality). If ftype=pdf, then render should be 0, else 5 should be way more than enough')
+render_args.add_argument( '--ftype' , default='png', choices=['png', 'pdf'], help='format of embedded figure')
 
 ###############################################################################
 
@@ -109,11 +109,11 @@ with open( args.output, 'w') as f:
 \begin{document}
 \begin{asy}""")
 
-    f.write( """
+    f.write( f"""
 import three;
 import palette;
 import graph;
-settings.render=10;
+settings.render={args.render};
 settings.prc=false;
 size(10cm);
 """)
