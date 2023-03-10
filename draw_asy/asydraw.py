@@ -58,8 +58,10 @@ topo_args.add_argument( '--numlab', action='store_true', help='display label on 
 topo_args.add_argument( '--colorlab', action='store_true', help='color bond with grayscale depend on label')
 topo_args.add_argument( '--sizelab', action='store_true', help='display larger bonds for large labels')
 topo_args.add_argument( '--maxval', default=8, type=int, help='maximum bin id for colorlab and sizelab')
-topo_args.add_argument( '--num_bins', default=15, type=int, help='maximum bin id for colorlab and sizelab')
+topo_args.add_argument( '--num_bins', default=15, type=int, help='number of bins for colorlab and sizelab')
 topo_args.add_argument( '--scalefact', default=1.e6, type=float, help='scale factor for bonds labels')
+topo_args.add_argument( '--labelsize', default=2, type=int, help='label font size in px (usually 2 or 3 is fine)')
+topo_args.add_argument( '--whichatomlabel', nargs='+', default=["all",], type=int, help='indexes of atoms whose connections are labeled (if labels are prescribed)')
 
 render_args = parser.add_argument_group( title='rendering arguments', description=None)
 render_args.add_argument( '--render', default='auto', help='rendering value (higher for more quality). If ftype=pdf, then render should be 0, else 5 should be enough')
@@ -69,7 +71,6 @@ render_args.add_argument( '--ftype' , default='png', choices=['png',], help='for
 
 # PARSE ARGUMENTS FROM STDIN
 args = parser.parse_args()
-
 
 if args.topo is not None:
     assert os.path.isfile( args.topo), f'No such file {args.topo}. Aborting'
@@ -84,6 +85,16 @@ if args.topo is not None:
     #    df['bond'] = ( df['bond'] - df['bond'].min() ) / ( df['bond'].max() - df['bond'].min() ) + 0.05
 
     unique_bonds = set( df['bond'])
+
+    if args.whichatomlabel[0] == 'all':
+        args.whichatomlabel = list( range( 0, max(
+                                                    max( df['id1']),
+                                                    max( df['id2'])
+                                                 )))
+    else:
+        # reduce index of whichatomlabel by 1
+        args.whichatomlabel = [wal - 1 for wal in args.whichatomlabel]
+
 
 
 with open( args.output, 'w') as f:
@@ -138,15 +149,15 @@ triple towardcamera( triple pt, real distance=1, projection
     f.write( f'material cylcolor0 = material(diffusepen=gray(0.5),specularpen=gray(0.30),emissivepen=gray(0.40));\n')
 
     if args.numlab:
-        f.write( """
-void drawRod(triple a, triple b, string lab) {
+        f.write( f"""
+void drawRod(triple a, triple b, string lab) {{
   surface rod = extrude(scale(cylRadius)*unitcircle, axis=length(b-a)*Z);
   triple orthovector = cross(Z, b-a);
   pair parrvec = ( 1.0/orthovector.x, 1.0/orthovector.y );
-  if (length(orthovector) > .01) {
+  if (length(orthovector) > .01) {{
     real angle1 = aCos(dot(Z, b-a) / length(b-a));
     rod = rotate(angle1, orthovector) * rod;
-  }
+  }}
   real angle1 = aCos( dot( a,b) / length(a) / length(b));
   // must project onto X-Y plane and compute angle //
   //draw(a -- b, L=rotate(angle1)*Label(lab, align=NoAlign, fontsize(2pt), position=MidPoint));
@@ -154,8 +165,8 @@ void drawRod(triple a, triple b, string lab) {
   draw(shift(a)*rod, surfacepen=cylcolor0);
   triple mid = (a + b) / 2.0 + (0,0,1);
   //label( rotate( angle1, z=(0,0))*Label( lab, align=N, fontsize(2pt)), position=towardcamera( mid));
-  label( Label( lab, align=N, fontsize(2pt)), position=towardcamera( mid));
-}
+  label( Label( lab, align=N, fontsize({args.labelsize}pt)), position=towardcamera( mid));
+}}
         """)
     elif args.colorlab:
         # first scale
@@ -189,7 +200,7 @@ void drawRod{n}(triple a, triple b, string lab) {{
   }}
   draw(shift(a)*rod, surfacepen=cylcolor{n});
   triple mid = (a + b) / 2.0 + (0,0,1);
-  label( Label( lab, align=N, fontsize(2pt)), position=towardcamera( mid));
+  label( Label( lab, align=N, fontsize({args.labelsize}pt)), position=towardcamera( mid));
 }}
             """)
     elif args.sizelab:
@@ -206,7 +217,7 @@ void drawRod{n}(triple a, triple b, string lab) {{
   }}
   draw(shift(a)*rod, surfacepen=cylcolor0);
   triple mid = (a + b) / 2.0 + (0,0,1);
-  label( Label( lab, align=N, fontsize(2pt)), position=towardcamera( mid));
+  label( Label( lab, align=N, fontsize({args.labelsize}pt)), position=towardcamera( mid));
 }}
             """)
     else:
@@ -259,7 +270,7 @@ void label( Label L, triple pos);
 
     atoms, xyz = vmd.read_vmd( args.xyz)
     # write down all the atoms
-    for i, x in enumerate( xyz):
+    for i, x in enumerate( xyz, start=1):
         f.write( f"""
 triple x{i} = ({x[0]}, {x[1]}, {x[2]});
         """)
@@ -275,16 +286,19 @@ triple x{i} = ({x[0]}, {x[1]}, {x[2]});
             a1 = xyz[int(row["id1"])]
             a2 = xyz[int(row["id2"])]
             #b = round( row["bond"]*1.e6, 1)
-            b = round( row["bond"]*args.scalefact, 1)
+            if int( row["id1"]) in args.whichatomlabel:
+                b = round( row["bond"]*args.scalefact, 1)
+            else:
+                b = ""
             # interval id
             bin_id = int( (row['bond'] - m) / (M - m) * args.num_bins - 1.e-10)
             if bin_id > args.maxval:
                 bin_id = args.maxval
             #f.write( f'label( "hello", ({a1[0]},{a1[1]}));\n')
             if args.colorlab or args.sizelab:
-                f.write( f'drawRod{bin_id}(({a1[0]}, {a1[1]}, {a1[2]}), ({a2[0]}, {a2[1]}, {a2[2]}), "{b}");\n')
+                f.write( f'drawRod{bin_id}(x{int(row["id1"])+1}, x{int(row["id2"])+1}, "{b}");\n')
             else:
-                f.write( f'drawRod(({a1[0]}, {a1[1]}, {a1[2]}), ({a2[0]}, {a2[1]}, {a2[2]}), "{b}");\n')
+                f.write( f'drawRod(x{int(row["id1"])+1}, x{int(row["id2"])+1}, "{b}");\n')
             #f.write( f'drawRod(x{index}, x{index});\n')
 
     # DRAW ATOMS
