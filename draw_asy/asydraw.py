@@ -61,10 +61,11 @@ topo_args.add_argument( '--maxval', default=8, type=int, help='maximum bin id fo
 topo_args.add_argument( '--num_bins', default=15, type=int, help='number of bins for colorlab and sizelab')
 topo_args.add_argument( '--scalefact', default=1.e6, type=float, help='scale factor for bonds labels')
 topo_args.add_argument( '--labelsize', default=2, type=int, help='label font size in px (usually 2 or 3 is fine)')
+topo_args.add_argument( '--labeldigits', default=1, type=int, help='number of digits displayed for the labels')
 topo_args.add_argument( '--whichatomlabel', nargs='+', default=["all",], type=int, help='indexes of atoms whose connections are labeled (if labels are prescribed)')
 
 render_args = parser.add_argument_group( title='rendering arguments', description=None)
-render_args.add_argument( '--render', default='auto', help='rendering value (higher for more quality). If ftype=pdf, then render should be 0, else 5 should be way more than enough')
+render_args.add_argument( '--render', default=4, type=int, help='rendering value (higher for more quality). If ftype=pdf, then render should be 0, else 5 should be way more than enough')
 render_args.add_argument( '--ftype' , default='png', choices=['png', 'pdf'], help='format of embedded figure')
 
 ###############################################################################
@@ -287,7 +288,7 @@ triple x{i} = ({x[0]}, {x[1]}, {x[2]});
             a2 = xyz[int(row["id2"])]
             #b = round( row["bond"]*1.e6, 1)
             if int( row["id1"]) in args.whichatomlabel:
-                b = round( row["bond"]*args.scalefact, 1)
+                b = round( row["bond"]*args.scalefact, args.labeldigits)
             else:
                 b = ""
             # interval id
