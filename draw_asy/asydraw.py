@@ -54,6 +54,8 @@ id1 id2 bond
 1   2   [val12]
 1   3   [val13]
 2   3   [val23]""")
+topo_args.add_argument( '--topo_sep', default='\s+', help="character (or regex) separator of topology file")
+topo_args.add_argument( '--topo_title', action='store_true', help="topology file has (1) header line")
 topo_args.add_argument( '--numlab', action='store_true', help='display label on bond')
 topo_args.add_argument( '--colorlab', action='store_true', help='color bond with grayscale depend on label')
 topo_args.add_argument( '--sizelab', action='store_true', help='display larger bonds for large labels')
@@ -75,7 +77,8 @@ args = parser.parse_args()
 
 if args.topo is not None:
     assert os.path.isfile( args.topo), f'No such file {args.topo}. Aborting'
-    df = pd.read_csv( args.topo, comment='#', sep='\s+')
+    header = 1 if args.topo_title else 0
+    df = pd.read_csv( args.topo, comment='#', sep=args.topo_sep, header=header)
     assert df.shape[1] in {2,3}, 'Something wrong with topology file. It should have 2 or 3 named columns'
     if df.shape[1] == 2:
         df['bond'] = args.bond_s
