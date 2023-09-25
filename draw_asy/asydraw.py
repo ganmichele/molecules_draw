@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-This code belongs to the repository:
+This code belongs to the repositories:
 https://gitlab.hpc.cineca.it/ceottogroup/draw_molecular_geometries
 
 Author: Michele Gandolfi
@@ -42,7 +42,7 @@ global_args.add_argument( '-O', '--output', default='picture.tex', help='name of
 
 # GROUP STYLE ARGUMENTS
 style_args = parser.add_argument_group( title='style arguments', description=None)
-style_args.add_argument( '--color_scheme', default=None, help='filename for custom color scheme')
+#style_args.add_argument( '--color_scheme', default=None, help='filename for custom color scheme')
 style_args.add_argument( '--sph_s', default='0.30', help='atom sphere scale')
 style_args.add_argument( '--cyl_s', default='0.08', help='bond cylinder radius scale')
 style_args.add_argument( '--proj_type', default='orthographic', help='type of projection')
@@ -295,7 +295,10 @@ triple x{i} = ({x[0]}, {x[1]}, {x[2]});
             else:
                 b = ""
             # interval id
-            bin_id = int( (row['bond'] - m) / (M - m) * args.num_bins - 1.e-10)
+            if M != m:
+                bin_id = int( (row['bond'] - m) / (M - m) * args.num_bins - 1.e-10)
+            else:
+                bin_id = 4
             if bin_id > args.maxval:
                 bin_id = args.maxval
             #f.write( f'label( "hello", ({a1[0]},{a1[1]}));\n')

@@ -51,7 +51,7 @@ args = parser.parse_args()
 
 def read_geo( fpath, scale=1.0):
     try:
-        from PES import vmd
+        import vmd
         atoms, xyz = vmd.read_vmd( fpath)
         coor = xyz.tolist()
     except Exception as e:
@@ -149,8 +149,8 @@ def write2template( fpath, tpath, connect=None, ang=None, rot_note=None, colors_
     atoms, coor, geom = read_geo( fpath, scale=geoscale)
 
     # define atoms characteristics. Add as necessary
-    #colors_dic = {'H': 'white', 'C': 'gray', 'D':'pink', 'N':'blue', 'O':'red', 'S': 'yellow'}
-    colors_dic = {'H': 'white', 'C': 'green!80!black', 'D':'pink', 'N':'blue', 'O':'red', 'S': 'yellow'} #FIXME
+    colors_dic = {'H': 'white', 'C': 'gray!50!black', 'D':'pink', 'N':'blue', 'O':'red', 'S': 'yellow'}
+    #colors_dic = {'H': 'white', 'C': 'green!80!black', 'D':'pink', 'N':'blue', 'O':'red', 'S': 'yellow'} #FIXME
     scale_dic = {'H': 1, 'C': 1.8, 'D': 1.1, 'N': 2.0, 'O':2.2, 'S':2.6}
     #scale_dic = {'H': 0.8, 'C': 1.6, 'D': 1.1, 'N': 2.0, 'O':1.8, 'S':2.2} #FIXME
 
