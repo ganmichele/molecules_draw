@@ -1,8 +1,5 @@
 #!/usr/bin/env python
 """
-This code belongs to the repositories:
-https://gitlab.hpc.cineca.it/ceottogroup/draw_molecular_geometries
-
 Author: Michele Gandolfi
 Date:   March 2022
 
